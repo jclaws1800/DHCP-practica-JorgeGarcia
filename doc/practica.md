@@ -45,3 +45,59 @@ pero todavía da error porque todavía no se ha configurado la subred DHCP
 Y ahora utilizamos:
 git add .
 git commit -m "Feat: Install DHCP service and configure network interfaces"
+
+
+## Checkpoint 2 - Configuración y comprobación del servidor DHCP
+
+Se configuró el servicio DHCP para la red interna 192.168.57.0/24.
+
+Se establecieron los siguientes parámetros globales:
+
+- Tiempo de concesión por defecto: 1 día (86400 segundos)
+- Tiempo máximo de concesión: 8 días (691200 segundos)
+- Dominio: jorge.test
+- Servidores DNS: 10.0.0.2 y 4.4.4.4
+
+Para la subred interna se configuró el rango dinámico:
+192.168.57.20 - 192.168.57.50
+
+La configuración se realizó en el archivo:
+/etc/dhcp/dhcpd.conf
+
+Antes de reiniciar el servicio se comprobó la sintaxis mediante:
+sudo dhcpd -t
+
+Al no detectarse errores, se reinició el servidor DHCP:
+sudo systemctl restart isc-dhcp-server.service
+
+El resultado mostró que el servicio se encontraba correctamente iniciado:
+Active: active (running)
+
+Finalmente, se comprobaron los puertos UDP en escucha mediante:
+sudo ss -lun
+
+
+## Checkpoint 3 - Comprobación de la asignación dinámica
+
+Se creó la máquina cliente "c1" y se conectó a la misma red interna
+intnet que el servidor DHCP.
+
+Se comprobó la configuración de sus interfaces mediante:
+ip a
+
+se comprobó que el servidor estaba proporcionando
+correctamente direcciones dentro del rango:
+192.168.57.20 - 192.168.57.50
+
+También se realizó una liberación y renovación manual de la concesión
+DHCP mediante:
+sudo dhclient eth1 -r
+sudo dhclient eth1
+
+Finalmente, desde el servidor se comprobó la base de datos de
+concesiones mediante:
+sudo tail -n 20 /var/lib/dhcp/dhcpd.leases
+
+En ella apareció una concesión activa correspondiente al cliente c1,
+identificada por su dirección MAC y por:
+client-hostname "c1" y binding state active
